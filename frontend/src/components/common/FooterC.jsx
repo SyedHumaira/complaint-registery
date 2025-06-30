@@ -1,3 +1,4 @@
+// File: complaint-registery/frontend/src/components/common/FooterC.jsx
 import React from 'react';
 import { MDBFooter } from 'mdb-react-ui-kit';
 

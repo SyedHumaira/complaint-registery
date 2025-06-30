@@ -1,0 +1,14 @@
+/* UserDashboard.css */
+
+body {
+  background-color: #f0f2f5;
+}
+
+h3 {
+  font-weight: bold;
+}
+
+.nav .btn.active {
+  background-color: #343a40;
+  color: white;
+}

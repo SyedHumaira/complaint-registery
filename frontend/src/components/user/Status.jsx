@@ -1,3 +1,4 @@
+//File: complaint-registery/frontend/src/components/user/Status.jsx
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import Card from 'react-bootstrap/Card';
@@ -81,84 +82,3 @@ const Status = () => {
 
 export default Status;
 
-
-
-
-
-
-
-
-
-// import React, { useEffect, useState } from 'react'
-// const Status = () => {
-//   const [city, setCity] = useState('');
-//   const [state, setState] = useState('');
-//   const [complaint, setComplaint] = useState("")
-
-//   // useEffect(()=>{
-//   //   const id = localStorage.getItem("user")
-//   //   console.log(id)
-
-//   //     // axios.get(`http://localhost:8000/status${id}`)
-//   //     // .then((res)=>{
-//   //     //   const { city, state, complaint } = res.data;
-//   //     //   console.log(city,state,complaint)
-//   //     //   setState(state);
-//   //     //   setCity(city);
-//   //     //   setComplaint(complaint)
-//   //     // })
-//   //     // .catch((err)=>{
-//   //     //   console.log(err)
-//   //     // })
-//   // },[])
-//   useEffect(() => {
-//     const user = JSON.parse(localStorage.getItem('user'));
-//     const { _id } = user;
-//     console.log(_id);
-//     axios.get(`http://localhost:8000/status/${_id}`)
-//       .then((res) => {
-//         axios.get('http://localhost:8000/Complaint')
-//           .then((res) => {
-//             const { city, state, complaint } = res.data;
-//             console.log(city, state, complaint)
-//             setState(state);
-//             setCity(city);
-//             setComplaint(complaint)
-//           })
-//           .catch((err) => {
-//             console.log(err)
-//           })
-//       })
-//       .catch((err) => {
-//         console.log(err)
-//       })
-//   }, []);
-
-//   return (
-//     <>
-//       <div className="row">
-//         <div className="status col-sm-6 mb-sm-0">
-//           <div className="card status-card">
-//             <div className="card-body">
-//               <h5 className="card-title">City:{city}</h5>
-//               <p className="card-text">State:{state} </p>
-//               <p className="card-text">Complaint:{complaint} </p>
-
-//             </div>
-//           </div>
-//         </div>
-//         <div className="status col-sm-6 mb-sm-0">
-//           <div className="card status-card">
-//             <div className="card-body">
-//               <h5 className="card-title">h</h5>
-//               <p className="card-text">Lorem ipsum dolor sit amet, consectetur adipisicing elit. <br />In, voluptatibus!</p>
-
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </>
-//   )
-// }
-
-// export default Status

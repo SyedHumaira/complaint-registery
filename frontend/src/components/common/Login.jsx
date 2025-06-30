@@ -1,120 +1,97 @@
-import axios from 'axios';
-import React, { useState } from 'react';
-import {Link, useNavigate } from 'react-router-dom';
-import Container from 'react-bootstrap/Container';
-import Navbar from 'react-bootstrap/Navbar';
-import Footer from './FooterC'
-
+// File: frontend/src/components/common/Login.jsx
+import axios from "axios";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import CustomNavbar from './CustomNavbar';
 const Login = () => {
-   const navigate = useNavigate();
-   const [user, setUser] = useState({
-      email: "",
-      password: ""
-   });
+  const navigate = useNavigate();
+  const [user, setUser] = useState({ email: "", password: "" });
 
-   const handleChange = (e) => {
-      const { name, value } = e.target;
-      setUser({ ...user, [name]: value });
-   };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUser({ ...user, [name]: value });
+  };
 
-   const handleSubmit = async (e) => {
-      e.preventDefault();
-      await axios.post("http://localhost:8000/Login", user)
-         .then((res) => {
-            alert("Successfully logged in");
-            localStorage.setItem("user", JSON.stringify(res.data));
-            const isLoggedIn = JSON.parse(localStorage.getItem("user"));
-            const { userType } = isLoggedIn
-            switch (userType) {
-               case "Admin":
-                  navigate("/AdminHome")
-                  break;
-               case "Ordinary":
-                  navigate("/HomePage")
-                  break;
-               case "Agent":
-                  navigate("/AgentHome")
-                  break;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post("http://localhost:8000/Login", user);
+      localStorage.setItem("user", JSON.stringify(res.data));
+      toast.success("Successfully logged in ✅");
 
-               default:
-                  navigate("/Login")
-                  break;
-            }
-         })
-         .catch((err) => {
-            if (err.response && err.response.status === 401) {
-               alert("User doesn`t exists");
-            }
-            navigate("/Login");
-         });
-   };
+      const { userType } = res.data;
+      switch (userType) {
+        case "Admin":
+          navigate("/AdminHome");
+          break;
+        case "Ordinary":
+          navigate("/dashboard");
+          break;
+        case "Agent":
+          navigate("/AgentHome");
+          break;
+        default:
+          navigate("/Login");
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error("Invalid email or password ❌");
+      } else {
+        toast.error("Login failed ❌");
+      }
+    }
+  };
 
-   return (
-      <>
-         <Navbar bg="dark" variant="dark">
-            <Container>
-               <Navbar.Brand>ComplaintCare </Navbar.Brand>
-               <ul className="navbar-nav">
-                  <li className="nav-item mb-2">
-                     <Link to={'/'}
-                        className={`nav-link text-light `}
-                     >
-                        Home
-                     </Link>
-                  </li>
-                  <li className="nav-item mb-2">
-                     <Link
-                     to={'/signup'}
-                        className={`nav-link text-light `}
-                     >
-                        SignUp
-                     </Link>
-                  </li>
-                  <li className="nav-item mb-2">
-                     <Link
-                     to={'/login'}
-                        className={`nav-link text-light `}
-                     >
-                        Login
-                     </Link>
-                  </li>
-               </ul>
-            </Container>
-         </Navbar>
-         <section className="vh-100 gradient-custom">
-            <div className="container py-5 h-100">
-               <div className="row d-flex justify-content-center align-items-center h-100">
-                  <div className="col-12 col-md-8 col-lg-6 col-xl-5">
-                     <div className="card bg-dark text-white">
-                        <div className="card-body p-5 text-center">
-                           <div className="mb-md-5 mt-md-4 pb-5">
-                              <h2 className="fw-bold mb-4">Login For Registering the Complaint</h2>
-                              <p className="text-white-50 mb-5">Please enter your Credentials!</p>
-                              <form onSubmit={handleSubmit}>
-                                 <div className="form-outline form-white mb-4">
-                                    <input type="email" name="email" value={user.email} onChange={handleChange} className="form-control form-control-lg" required />
-                                    <label className="form-label" htmlFor="email">Email</label>
-                                 </div>
-                                 <div className="form-outline form-white mb-4">
-                                    <input type="password" name="password" value={user.password} onChange={handleChange} className="form-control form-control-lg" autoComplete="off" required />
-                                    <label className="form-label" htmlFor="password">Password</label>
-                                 </div>
-
-                                 <button className="btn btn-outline-light btn-lg px-5" type="submit">Login</button>
-                              </form>
-                           </div>
-                           <div>
-                              <p className="mb-0">Don't have an account? <Link to="/SignUp">SignUp</Link></p>
-                           </div>
-                        </div>
-                     </div>
+  return (
+    <>
+      <CustomNavbar />
+    <section className="vh-100 gradient-custom">
+      <div className="container py-5 h-100">
+        <div className="row d-flex justify-content-center align-items-center h-100">
+          <div className="col-12 col-md-8 col-lg-6 col-xl-5">
+            <div className="card bg-dark text-white">
+              <div className="card-body p-5 text-center">
+                <form onSubmit={handleSubmit}>
+                  <h2 className="fw-bold mb-4">Login</h2>
+                  <div className="form-outline form-white mb-4">
+                    <input
+                      type="email"
+                      name="email"
+                      value={user.email}
+                      onChange={handleChange}
+                      className="form-control form-control-lg"
+                      required
+                    />
+                    <label className="form-label">Email</label>
                   </div>
-               </div>
+                  <div className="form-outline form-white mb-4">
+                    <input
+                      type="password"
+                      name="password"
+                      value={user.password}
+                      onChange={handleChange}
+                      className="form-control form-control-lg"
+                      autoComplete="off"
+                      required
+                    />
+                    <label className="form-label">Password</label>
+                  </div>
+                  <button className="btn btn-outline-light btn-lg px-5" type="submit">
+                    Login
+                  </button>
+                </form>
+                <p className="mb-0 mt-3">
+                  Don't have an account? <Link to="/SignUp">SignUp</Link>
+                </p>
+              </div>
             </div>
-         </section>
-         <Footer/>
-      </>
-   );
+          </div>
+        </div>
+      </div>
+    </section>
+    </>
+  );
 };
 
 export default Login;

@@ -1,3 +1,5 @@
+
+// File: complaint-registery/frontend/src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -10,3 +12,4 @@ root.render(
     <App />
   </React.StrictMode>
 );
+

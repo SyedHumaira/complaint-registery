@@ -1,29 +1,93 @@
+// File: backend/index.js
 const express = require("express");
 const cors = require("cors");
-require("./config");
+const http = require("http");
+const { Server } = require("socket.io");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+require("dotenv").config();
+
 const {
   ComplaintSchema,
   UserSchema,
   AssignedComplaint,
   MessageSchema,
 } = require("./Schema");
-const app = express();
-const PORT = 8000;
 
-/**************************************** */
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+const PORT = process.env.PORT || 8000;
+
 app.use(express.json());
 app.use(cors());
-/********************************************** */
 
-/******************message *******************************/
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/details")
+  .then(() => console.log("Connected to MongoDB"))
+  .catch(err => console.error("MongoDB connection error:", err));
+
+// Socket.IO
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+
+  socket.on("sendMessage", (data) => {
+    io.emit("receiveMessage", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
+
+// SignUp
+app.post("/SignUp", async (req, res) => {
+  try {
+    const { name, email, password, phone, userType } = req.body;
+    const user = new UserSchema({
+      name,
+      email: email.toLowerCase(),
+      password,
+      phone,
+      userType
+    });
+
+    const resultUser = await user.save();
+    console.log("User registered:", resultUser.email);
+    res.status(201).send(resultUser);
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).send({ error: "Signup failed" });
+  }
+});
+
+// Login
+app.post("/Login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await UserSchema.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(401).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid password" });
+
+    console.log("Login successful for:", user.email);
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error during login" });
+  }
+});
+
+// Messages
 app.post("/messages", async (req, res) => {
   try {
     const { name, message, complaintId } = req.body;
-    const messageData = new MessageSchema({
-      name,
-      message,
-      complaintId,
-    });
+    const messageData = new MessageSchema({ name, message, complaintId });
     const messageSaved = await messageData.save();
     res.status(200).json(messageSaved);
   } catch (error) {
@@ -34,263 +98,177 @@ app.post("/messages", async (req, res) => {
 app.get("/messages/:complaintId", async (req, res) => {
   try {
     const { complaintId } = req.params;
-    const messages = await MessageSchema.find({ complaintId }).sort(
-      "-createdAt"
-    );
+    const messages = await MessageSchema.find({ complaintId }).sort("-createdAt");
     res.json(messages);
   } catch (error) {
     res.status(500).json({ error: "Failed to retrieve messages" });
   }
 });
 
-/***********for signup user************************************** */
-
-app.post("/SignUp", async (req, res) => {
-  const user = new UserSchema(req.body);
-  try {
-    const resultUser = await user.save();
-    res.send(resultUser);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-//////////////////////for login user///////////////////
-app.post("/Login", async (req, res) => {
-  const { email, password } = req.body;
-  const user = await UserSchema.findOne({ email });
-  if (!user) {
-    return res.status(401).json({ message: "User doesn`t exists" });
-  }
-  if (user.email === email && user.password === password) {
-    res.json(user);
-  } else {
-    res.status(401).json({ message: "Invalid Credentials" });
-  }
-});
-
-//////////////////////////for fetching agent in admin portal///////////////
+// Fetch users
 app.get("/AgentUsers", async (req, res) => {
   try {
-    const { userType } = req.params;
     const users = await UserSchema.find({ userType: "Agent" });
-    if (users.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      return res.status(200).json(users);
-    }
+    res.status(200).json(users);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-//////////////////////////for fetching ordinary user in admin portal///////////////
 app.get("/OrdinaryUsers", async (req, res) => {
   try {
     const users = await UserSchema.find({ userType: "Ordinary" });
-    if (users.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      return res.status(200).json(users);
-    }
+    res.status(200).json(users);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-//////////////////////////for fetching ordinary user in admin portal///////////////
-app.get("/AgentUsers", async (req, res) => {
-  try {
-    // const { userType } = req.params;
-    const agentUsers = await UserSchema.find({ userType: "Agent" });
-    if (agentUsers.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      return res.status(200).json(agentUsers);
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-//////////////////displaying agent with id/////////////////
 app.get("/AgentUsers/:agentId", async (req, res) => {
   try {
-    const { agentId } = req.params;
-    const user = await UserSchema.findOne({ _id: agentId });
-    if (user.userType === "Agent") {
-      return res.status(200).json(user);
-    } else {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const user = await UserSchema.findOne({ _id: req.params.agentId });
+    if (user && user.userType === "Agent") return res.status(200).json(user);
+    res.status(404).json({ error: "Agent not found" });
   } catch {
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-////////////for deleting the user from admin portal////////////////
-app.delete("/OrdinaryUsers/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await UserSchema.findOne({ _id: id });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      await UserSchema.deleteOne({ _id: id });
-      await ComplaintSchema.deleteOne({ userId: id });
-      return res.status(200).json({ message: "User deleted successfully" });
-    }
-  } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-///////////////complaint register by user and its status checking///////////////
-app.post("/Complaint/:id", async (req, res) => {
-  const UserId = req.params.id;
+// Delete user + complaints
+app.delete("/OrdinaryUsers/:id", async (req, res) => {
   try {
-    const user = await UserSchema.findById(UserId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      const complaint = new ComplaintSchema(req.body);
-      let resultComplaint = await complaint.save();
-      res.send(resultComplaint).status(200);
-    }
+    const user = await UserSchema.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    await UserSchema.deleteOne({ _id: req.params.id });
+    await ComplaintSchema.deleteMany({ userId: req.params.id });
+    res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ✅ Register complaint + Emit via Socket.IO
+app.post("/Complaint/:id", async (req, res) => {
+  try {
+    const user = await UserSchema.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const complaint = new ComplaintSchema({
+      ...req.body,
+      userId: req.params.id,
+      status: "pending"
+    });
+
+    const result = await complaint.save();
+    io.emit("newComplaint", result); // ✅ Emit real-time update
+    res.status(200).send(result);
+  } catch (error) {
     res.status(500).json({ error: "Failed to register complaint" });
   }
 });
 
-/////////////////for the all complaints made by the single user/////////////
+// Status (user & all)
 app.get("/status/:id", async (req, res) => {
-  const userId = req.params.id;
   try {
-    const user = await UserSchema.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    } else {
-      const comment = await ComplaintSchema.find({ userId: userId });
-      res.json(comment);
-    }
+    const complaints = await ComplaintSchema.find({ userId: req.params.id });
+    res.json(complaints);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to retrieve user" });
+    res.status(500).json({ error: "Failed to retrieve complaints" });
   }
 });
 
-/////////////status of complaint in admin page/////////////////////////////////////////
 app.get("/status", async (req, res) => {
   try {
-    const complaint = await ComplaintSchema.find();
-    res.json(complaint);
+    const complaints = await ComplaintSchema.find();
+    res.json(complaints);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to retrieve Complaints" });
+    res.status(500).json({ error: "Failed to retrieve complaints" });
   }
 });
 
-////////////Assigned complaint by admin//////////////////
-app.post("/assignedComplaints", (req, res) => {
+// Delete & Update complaints
+app.delete("/Complaint/:id", async (req, res) => {
   try {
-    const assignedComplaint = req.body;
-    AssignedComplaint.create(assignedComplaint);
-    res.sendStatus(201);
+    const deleted = await ComplaintSchema.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Complaint not found" });
+    res.json({ message: "Complaint deleted successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to add assigned complaint" });
+    res.status(500).json({ error: "Failed to delete complaint" });
   }
 });
 
-////////////////complaints in agent homepage////////////////////
-app.get("/allcomplaints/:agentId", async (req, res) => {
+app.put("/Complaint/:id", async (req, res) => {
   try {
-    const agentId = req.params.agentId;
-    const complaints = await AssignedComplaint.find({ agentId: agentId });
-
-    // Fetch all complaintIds from the complaints
-    const complaintIds = complaints.map((complaint) => complaint.complaintId);
-
-    // Fetch the corresponding complaints with their names and cities
-    const complaintDetails = await ComplaintSchema.find({
-      _id: { $in: complaintIds },
-    });
-
-    // Merge the complaint details into the complaints array
-    const updatedComplaints = complaints.map((complaint) => {
-      const complaintDetail = complaintDetails.find(
-        (detail) => detail._id.toString() === complaint.complaintId.toString()
-      );
-      return {
-        ...complaint,
-        name: complaintDetail.name,
-        city: complaintDetail.city,
-        state: complaintDetail.state,
-        address: complaintDetail.address,
-        pincode: complaintDetail.pincode,
-        comment: complaintDetail.comment,
-      };
-    });
-    res.json(updatedComplaints);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Failed to get complaints" });
-  }
-});
-
-////////////////////updating the user profile by admin/////////////////////////////
-
-app.put("/user/:_id", async (req, res) => {
-  try {
-    const { _id } = req.params;
-    const { name, email, phone } = req.body;
-    const user = await UserSchema.findByIdAndUpdate(
-      _id,
-      { name, email, phone },
-      { new: true }
+    const updated = await ComplaintSchema.findByIdAndUpdate(
+      req.params.id, req.body, { new: true }
     );
-    if (!user) {
-      res.status(404).json({ error: "User not found" });
-    }
-    res.json(user);
+    if (!updated) return res.status(404).json({ error: "Complaint not found" });
+    res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update the user" });
-  }
-});
-
-////////////////updating the complaint from the agent/////////////////////////////
-app.put("/complaint/:complaintId", async (req, res) => {
-  try {
-    const { complaintId } = req.params;
-    const { status } = req.body;
-    if (!complaintId || !status) {
-      return res.status(400).json({ error: "Missing complaintId or status" });
-    }
-
-    const updatedComplaint = await ComplaintSchema.findByIdAndUpdate(
-      complaintId,
-      { status },
-      { new: true }
-    );
-
-    const assigned = await AssignedComplaint.findOneAndUpdate(
-      {complaintId: complaintId},
-      { status },
-      { new: true }
-    );
-
-    if (!updatedComplaint && !assigned) {
-      return res.status(404).json({ error: "Complaint not found" });
-    }
-    res.json(updatedComplaint);
-  } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Failed to update complaint" });
   }
 });
 
-app.listen(PORT, () => console.log(`server started at ${PORT}`));
+// Assign & track assigned complaints
+app.post("/assignedComplaints", async (req, res) => {
+  try {
+    const assignment = await AssignedComplaint.create(req.body);
+    res.status(201).json(assignment);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to assign complaint" });
+  }
+});
+
+app.get("/allcomplaints/:agentId", async (req, res) => {
+  try {
+    const complaints = await AssignedComplaint.find({ agentId: req.params.agentId });
+    const complaintIds = complaints.map(c => c.complaintId);
+    const details = await ComplaintSchema.find({ _id: { $in: complaintIds } });
+
+    const merged = complaints.map(ac => {
+      const match = details.find(d => d._id.toString() === ac.complaintId.toString());
+      return { ...ac._doc, ...match?._doc };
+    });
+
+    res.json(merged);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get complaints" });
+  }
+});
+
+// Admin update user info
+app.put("/user/:_id", async (req, res) => {
+  try {
+    const user = await UserSchema.findByIdAndUpdate(req.params._id, req.body, { new: true });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+// Agent update complaint status
+app.put("/complaint/:complaintId", async (req, res) => {
+  try {
+    const updated = await ComplaintSchema.findByIdAndUpdate(
+      req.params.complaintId,
+      { status: req.body.status },
+      { new: true }
+    );
+    await AssignedComplaint.findOneAndUpdate(
+      { complaintId: req.params.complaintId },
+      { status: req.body.status }
+    );
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update complaint" });
+  }
+});
+
+// Start Server
+server.listen(PORT, () => {
+  console.log(`Server + Socket.IO running on port ${PORT}`);
+});
+
+
