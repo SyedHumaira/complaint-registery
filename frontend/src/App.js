@@ -31,8 +31,8 @@ function App() {
       <Router>
         <ToastContainer position="top-right" autoClose={3000} />
 
-        {/* ✅ Optional: Place CustomNavbar globally if needed */}
-        {isLoggedIn && <CustomNavbar />}
+        {/* ✅ Always show navbar for everyone */}
+        <CustomNavbar />
 
         <Routes>
           <Route exact path="/" element={<Home />} />
@@ -50,11 +50,9 @@ function App() {
               <Route path="/Status" element={<Status />} />
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/RegisterComplaint" element={<RegisterComplaint />} />
-              <Route path="/profile" element={<Profile />} /> {/* ✅ Profile route */}
+              <Route path="/profile" element={<Profile />} />
             </>
-          ) : (
-            <Route path="/Login" element={<Login />} />
-          )}
+          ) : null}
         </Routes>
       </Router>
     </div>
@@ -62,4 +60,3 @@ function App() {
 }
 
 export default App;
-

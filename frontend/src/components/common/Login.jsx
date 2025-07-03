@@ -3,7 +3,9 @@ import axios from "axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import CustomNavbar from './CustomNavbar';
+
+import FooterC from './FooterC';
+
 const Login = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({ email: "", password: "" });
@@ -45,51 +47,52 @@ const Login = () => {
 
   return (
     <>
-      <CustomNavbar />
-    <section className="vh-100 gradient-custom">
-      <div className="container py-5 h-100">
-        <div className="row d-flex justify-content-center align-items-center h-100">
-          <div className="col-12 col-md-8 col-lg-6 col-xl-5">
-            <div className="card bg-dark text-white">
-              <div className="card-body p-5 text-center">
-                <form onSubmit={handleSubmit}>
-                  <h2 className="fw-bold mb-4">Login</h2>
-                  <div className="form-outline form-white mb-4">
-                    <input
-                      type="email"
-                      name="email"
-                      value={user.email}
-                      onChange={handleChange}
-                      className="form-control form-control-lg"
-                      required
-                    />
-                    <label className="form-label">Email</label>
-                  </div>
-                  <div className="form-outline form-white mb-4">
-                    <input
-                      type="password"
-                      name="password"
-                      value={user.password}
-                      onChange={handleChange}
-                      className="form-control form-control-lg"
-                      autoComplete="off"
-                      required
-                    />
-                    <label className="form-label">Password</label>
-                  </div>
-                  <button className="btn btn-outline-light btn-lg px-5" type="submit">
-                    Login
-                  </button>
-                </form>
-                <p className="mb-0 mt-3">
-                  Don't have an account? <Link to="/SignUp">SignUp</Link>
-                </p>
+     
+      <section className="vh-100 gradient-custom">
+        <div className="container py-5 h-100">
+          <div className="row d-flex justify-content-center align-items-center h-100">
+            <div className="col-12 col-md-8 col-lg-6 col-xl-5">
+              <div className="card bg-dark text-white">
+                <div className="card-body p-5 text-center">
+                  <form onSubmit={handleSubmit}>
+                    <h2 className="fw-bold mb-4">Login</h2>
+                    <div className="form-outline form-white mb-4">
+                      <input
+                        type="email"
+                        name="email"
+                        value={user.email}
+                        onChange={handleChange}
+                        className="form-control form-control-lg"
+                        required
+                      />
+                      <label className="form-label">Email</label>
+                    </div>
+                    <div className="form-outline form-white mb-4">
+                      <input
+                        type="password"
+                        name="password"
+                        value={user.password}
+                        onChange={handleChange}
+                        className="form-control form-control-lg"
+                        autoComplete="off"
+                        required
+                      />
+                      <label className="form-label">Password</label>
+                    </div>
+                    <button className="btn btn-outline-light btn-lg px-5" type="submit">
+                      Login
+                    </button>
+                  </form>
+                  <p className="mb-0 mt-3">
+                    Don't have an account? <Link to="/SignUp">SignUp</Link>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+      <FooterC />
     </>
   );
 };

@@ -1,17 +1,14 @@
-// File: complaint-registery/frontend/src/components/common/Home.jsx
+// File: frontend/src/components/common/Home.jsx
 import React from 'react';
 import Container from 'react-bootstrap/Container';
-import Image1 from '../../assets/Image1.png'; // ✅ updated path
+import Image1 from '../../assets/Image1.png';
 import { Link } from 'react-router-dom';
 import Button from 'react-bootstrap/Button';
 import Footer from './FooterC';
-import CustomNavbar from './CustomNavbar';
 
 const Home = () => {
   return (
     <>
-      <CustomNavbar />
-
       <Container className='home-container'>
         <div className="left-side">
           <img src={Image1} alt="Complaint Illustration" />
